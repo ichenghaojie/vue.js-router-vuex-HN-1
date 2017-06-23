@@ -85,19 +85,38 @@ var store = new Vuex.Store({
     SET_IN_ITEMS:function(state,{data}){
     	state.items = data;
     	console.log(state.items);
+    	
+    },
+    SET_ACTIVE_TYPE:function(state,{type}){
+    	state.activeType = type;
     }
   },
   actions: {
   	FETCH_LIST_DATA:function({commit,dispatch,state},{type}){
-  		
+  		commit('SET_ACTIVE_TYPE', { type })
         fetchIdsByType(type)
         .then(ids=>{commit('SET_IN_LISTS',{data:ids,type:type})})
-        .then(()=>{dispatch('FETCH_ITEMS',{data:state.lists[type]})})
+        .then(()=>{dispatch('ENSURE_ACTIVE_ITEMS')})
 
   	},
-  	FETCH_ITEMS:function({commit,dispatch,state},{data}){
+  	ENSURE_ACTIVE_ITEMS: ({ dispatch, getters }) => {
+  		console.log(getters.ACTIVE_IDS);
+            return dispatch('FETCH_ITEMS', {
+                ids: getters.ACTIVE_IDS
+            })
+    },
+  	FETCH_ITEMS:function({commit,dispatch,state,getters},{data}){
   		fetchItems(data)
   		.then(items=>{commit('SET_IN_ITEMS',{data:items})});
+  		console.log(getters.ACTIVE_IDS);
+  	}
+  },
+  getters:{
+  	ACTIVE_IDS:function (state) {
+  		var page = state.route.params.page;
+  		var per = state.itemsPerPage;
+  		var lists = state.lists[state.activeType].slice((page-1)*per,page*per);
+  		return lists;
   		
   	}
   }
